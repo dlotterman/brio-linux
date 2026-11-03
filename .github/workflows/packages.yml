@@ -32,10 +32,14 @@ jobs:
           echo "version=$py" >> "$GITHUB_OUTPUT"
 
   rpm:
-    name: RPM (Fedora)
+    # One build per release: the RPM is tied to that release's Python ABI.
+    name: RPM (Fedora ${{ matrix.fedora }})
     needs: version
     runs-on: ubuntu-latest
-    container: registry.fedoraproject.org/fedora:latest
+    strategy:
+      matrix:
+        fedora: ["44", "45"]
+    container: registry.fedoraproject.org/fedora:${{ matrix.fedora }}
     steps:
       - uses: actions/checkout@v4
       - name: Install build tools
@@ -53,7 +57,7 @@ jobs:
           cp ~/rpmbuild/RPMS/noarch/*.rpm ~/rpmbuild/SRPMS/*.rpm dist/
       - uses: actions/upload-artifact@v4
         with:
-          name: rpm
+          name: rpm-fc${{ matrix.fedora }}
           path: dist/*.rpm
 
   deb:

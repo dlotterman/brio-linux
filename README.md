@@ -16,7 +16,7 @@ Prebuilt packages are attached to every
 
 | Distro | File | Install |
 |---|---|---|
-| Fedora | `brio-control-<ver>-1.fc*.noarch.rpm` | `sudo dnf install ./brio-control-*.noarch.rpm` |
+| Fedora 44 / 45 | `brio-control-<ver>-1.fc<release>.noarch.rpm`, the one that matches your Fedora release (`rpm -E %fedora`) | `sudo dnf install ./brio-control-*.fc$(rpm -E %fedora).noarch.rpm` |
 | Debian 13+ / Ubuntu 24.04+ | `brio-control_<ver>-1_all.deb` | `sudo apt install ./brio-control_*_all.deb` |
 | Arch | — | build [`packaging/arch/PKGBUILD`](packaging/arch/PKGBUILD) with `makepkg -si` |
 

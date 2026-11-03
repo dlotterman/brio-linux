@@ -12,7 +12,8 @@ entry, icon and the optional GNOME Shell / KWin focus helpers.
 
 ## CI and releases
 
-`.github/workflows/packages.yml` builds the RPM (in `fedora:latest`) and the DEB (in
+`.github/workflows/packages.yml` builds an RPM for each supported Fedora release (44 and 45; each RPM is tied to
+that release's Python version) and the DEB (in
 `debian:trixie`) on every push and pull request, and uploads them as workflow artifacts.
 Pushing a `v*` tag also publishes a GitHub release with the packages attached.
 
