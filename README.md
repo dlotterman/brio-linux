@@ -11,10 +11,22 @@ because logind already gives the logged-in user access to `/dev/video*`.
 
 ## Install
 
-From a package (see [`packaging/`](packaging/README.md)), then:
+Prebuilt packages are attached to every
+[GitHub release](https://github.com/xnixy/brio-linux/releases/latest):
+
+| Distro | File | Install |
+|---|---|---|
+| Fedora | `brio-control-<ver>-1.fc*.noarch.rpm` | `sudo dnf install ./brio-control-*.noarch.rpm` |
+| Debian 13+ / Ubuntu 24.04+ | `brio-control_<ver>-1_all.deb` | `sudo apt install ./brio-control_*_all.deb` |
+| Arch | — | build [`packaging/arch/PKGBUILD`](packaging/arch/PKGBUILD) with `makepkg -si` |
+
+Then:
 
     systemctl --user enable --now briod.service
     brio-control
+
+The GUI also starts the daemon on demand through D-Bus activation. To build the packages
+yourself, see [`packaging/`](packaging/README.md).
 
 ### From a source checkout
 

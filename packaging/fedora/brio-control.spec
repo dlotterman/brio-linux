@@ -3,7 +3,7 @@ Version:        0.1.0
 Release:        1%{?dist}
 Summary:        Logitech BRIO controls for Linux (HDR, FOV, zoom, profiles)
 License:        GPL-3.0-or-later
-URL:            https://example.invalid/brio-control
+URL:            https://github.com/xnixy/brio-linux
 Source0:        %{name}-%{version}.tar.gz
 BuildArch:      noarch
 

@@ -1,0 +1,101 @@
+name: Build packages
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  version:
+    name: Check versions
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: v
+        name: pyproject, spec and debian/changelog must agree (and match the tag)
+        run: |
+          py=$(sed -n 's/^version = "\(.*\)"/\1/p' pyproject.toml)
+          spec=$(awk '/^Version:/ {print $2}' packaging/fedora/brio-control.spec)
+          deb=$(head -1 packaging/debian/changelog | sed 's/.*(\(.*\)-[^-]*).*/\1/')
+          echo "pyproject=$py spec=$spec debian=$deb"
+          [ "$py" = "$spec" ] && [ "$py" = "$deb" ] || { echo "::error::version mismatch"; exit 1; }
+          if [[ "$GITHUB_REF" == refs/tags/v* ]] && [ "${GITHUB_REF_NAME#v}" != "$py" ]; then
+            echo "::error::tag $GITHUB_REF_NAME does not match version $py"; exit 1
+          fi
+          echo "version=$py" >> "$GITHUB_OUTPUT"
+
+  rpm:
+    name: RPM (Fedora)
+    needs: version
+    runs-on: ubuntu-latest
+    container: registry.fedoraproject.org/fedora:latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install build tools
+        run: |
+          dnf -y install rpm-build python3-devel pyproject-rpm-macros python3-setuptools \
+            python3-pip python3-wheel make systemd-rpm-macros tar
+      - name: Build
+        env:
+          V: ${{ needs.version.outputs.version }}
+        run: |
+          mkdir -p ~/rpmbuild/SOURCES dist
+          tar --exclude=./.git --exclude=./dist --transform "s,^\.,brio-control-$V," \
+            -czf ~/rpmbuild/SOURCES/brio-control-$V.tar.gz .
+          rpmbuild -ba packaging/fedora/brio-control.spec
+          cp ~/rpmbuild/RPMS/noarch/*.rpm ~/rpmbuild/SRPMS/*.rpm dist/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rpm
+          path: dist/*.rpm
+
+  deb:
+    name: DEB (Debian/Ubuntu)
+    needs: version
+    runs-on: ubuntu-latest
+    container: debian:trixie
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install build tools
+        env:
+          DEBIAN_FRONTEND: noninteractive
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends build-essential debhelper dh-python \
+            python3-all python3-setuptools pybuild-plugin-pyproject
+      - name: Build
+        run: |
+          cp -r packaging/debian debian
+          dpkg-buildpackage -us -uc -b
+          mkdir -p dist && cp ../*.deb dist/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: deb
+          path: dist/*.deb
+
+  release:
+    name: GitHub release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [rpm, deb]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ls -l dist
+          gh release create "$GITHUB_REF_NAME" dist/* --repo "$GITHUB_REPOSITORY" \
+            --title "BRIO Control ${GITHUB_REF_NAME#v}" --generate-notes

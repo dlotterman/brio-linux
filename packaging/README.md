@@ -10,10 +10,27 @@ entry, icon and the optional GNOME Shell / KWin focus helpers.
 - **Debian / Ubuntu:** copy `packaging/debian` to `debian/` at the source root and run
   `dpkg-buildpackage -us -uc -b`.
 
-After installing, enable the daemon for your user:
+## CI and releases
+
+`.github/workflows/packages.yml` builds the RPM (in `fedora:latest`) and the DEB (in
+`debian:trixie`) on every push and pull request, and uploads them as workflow artifacts.
+Pushing a `v*` tag also publishes a GitHub release with the packages attached.
+
+To cut a release, bump the version in all three places (the workflow fails if they differ
+or if they don't match the tag):
+
+- `pyproject.toml` → `version`
+- `packaging/fedora/brio-control.spec` → `Version` (and add a `%changelog` entry)
+- `packaging/debian/changelog` → add a new entry (`dch -v X.Y.Z-1`)
+
+Then tag and push:
+
+    git tag v0.1.0 && git push origin v0.1.0
+
+## After installing
+
+Enable the daemon for your user:
 
     systemctl --user enable --now briod.service
 
 The GUI also starts it on demand through D-Bus activation.
-
-`url` fields are placeholders until the project has a public home.
